@@ -1,0 +1,60 @@
+/**
+ * Convert a move to string, contain 6 elements
+ * 1. Name of piece at start postion (empty if this is a pawn)
+ * 2. Name of rank/file if there is another piece with same color can make a legal move to target position
+ * 3. 'x' if this is a captured move
+ * 4. Target position
+ * 5. "=X" if this is a promotion. 'X' must be {R, N, B, Q}
+ * 6. "+" / "#" if this is a check/check mate
+ */
+string getMove(Board board, Move move)
+{
+    string moveStr = "";
+    pair<int, int> startPosition = move.getStartPosition();
+    pair<int, int> step = move.getStep();
+    Piece piece = board.getPiece(startPosition);
+    char pieceName = piece.getName();
+    pair<int, int> targetPosition = {startPosition.rank + step.rank, startPosition.file + step.file};
+
+    // 1st element
+
+    if (pieceName != 'P')
+        moveStr += pieceName;
+
+    // 2nd element
+
+    for (int rank = 0; rank < 8; ++rank)
+        for (int file = 0; file < 8; ++file)
+            if (startPosition != make_pair(rank, file) && piece == board.getPiece({rank, file}))
+            {
+                pair<int, int> step = {targetPosition.rank - rank, targetPosition.file - file};
+                Move move = Move(make_pair(rank, file), step);
+                if (isLegalMove(board, move))
+                {
+                    moveStr += (startPosition.file == file) ? char(startPosition.rank + '1') : char(startPosition.file + 'a');
+                    rank = 8;
+                    break;
+                }
+            }
+
+    // 3rd element
+
+    if (board.getPiece(targetPosition).getValue() != 0)
+        moveStr += 'x';
+
+    // 4th element
+
+    moveStr += char(targetPosition.file + 'a');
+    moveStr += char(targetPosition.rank + '1');
+
+    // 5th element
+
+    if (move.getPromotedPiece().getName() != 'U')
+        moveStr += "=" + move.getPromotedPiece().getName();
+
+    // 6th element
+
+    if (board.isCheck())
+        moveStr += (board.isCheckMate()) ? "#" : "+";
+    return moveStr;
+}
