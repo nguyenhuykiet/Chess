@@ -3,6 +3,4 @@
 
 #include "information.h"
 
-
-
 #endif

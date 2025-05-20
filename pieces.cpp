@@ -1,10 +1,5 @@
 #include "pieces.h"
 
-#include <utility>
-
-#define rank first
-#define file second
-
 using namespace std;
 
 Piece::Piece()
@@ -32,32 +27,40 @@ int Piece::getValue()
     return value;
 }
 
+char Piece::getColor()
+{
+    if (value == 0)
+        return 'u';
+    return value > 0 ? 'w' : 'b';
+}
+
 void Piece::setInfo(char name, int value)
 {
     this->name = name;
     this->value = value;
 }
 
+bool Piece::isSameColor(Piece piece)
+{
+    return value * piece.value > 0;
+}
+
 Pawn::Pawn(int value) : Piece('P', value)
 {
-    step.rank = (value > 0) ? 1 : -1;
-    step.file = 1;
+    moveCount = 0;
 }
 
 Knight::Knight(int value) : Piece('N', value)
 {
-    step = {2, 2};
 }
 
 Bishop::Bishop(int value) : Piece('B', value)
 {
-    step = {8, 8};
 }
 
 Rook::Rook(int value) : Piece('R', value)
 {
     isMoved = false;
-    step = {8, 8};
 }
 
 bool Rook::getIsMoved()
@@ -65,15 +68,18 @@ bool Rook::getIsMoved()
     return isMoved;
 }
 
+void Rook::setMoved(bool isMoved)
+{
+    this->isMoved = isMoved;
+}
+
 Queen::Queen(int value) : Piece('Q', value)
 {
-    step = {8, 8};
 }
 
 King::King(int value) : Piece('K', value)
 {
     isMoved = false;
-    step = {1, 1};
 }
 
 bool King::getIsMoved()

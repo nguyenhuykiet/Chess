@@ -3,6 +3,7 @@
 
 #include "pieces.h"
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -32,8 +33,9 @@ public:
     Piece getPiece(pair<int, int> position);
     int getPoint();
     void makeMove(Move move);
-    bool isCheck();
-    bool isCheckMate();
+    bool isCheck(pair<int, int> position);
+    bool isLegalMove(Move move);
+    vector<Move> getLegalMoves(char color);
 };
 
 #endif

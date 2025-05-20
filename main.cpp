@@ -1,10 +1,7 @@
-#include <iostream>
+#include "pieces.h"
 #include "information.h"
-
-using namespace std;
+#include "calculation.h"
 
 int main()
 {
-    Move move = Move({0, 1}, {2, 1});
-    cout << move.getMoveStr();
 }
