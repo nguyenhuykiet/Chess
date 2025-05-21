@@ -1,60 +1,15 @@
-#include "information.h"
-#include "calculation.h"
-
-#include <utility>
-#include <vector>
+#include "board.h"
 
 #define rank first
 #define file second
 
 using namespace std;
 
-Move::Move(pair<int, int> startPosition, pair<int, int> step, Piece promotedPiece)
-{
-    this->startPosition = startPosition;
-    this->step = step;
-    this->promotedPiece = promotedPiece;
-}
-
-Move::Move(string moveStr)
-{
-    pair<int, int> startPosition = {moveStr[0] - 'a', moveStr[1] - '0'};
-    pair<int, int> step = {moveStr[2] - moveStr[0], moveStr[3] - moveStr[1]};
-}
-
-string Move::getMoveStr()
-{
-    string moveStr = "";
-    pair<int, int> targetPosition = {startPosition.rank + step.rank, startPosition.file + step.file};
-
-    moveStr += char(startPosition.file + 'a');
-    moveStr += char(startPosition.rank + '1');
-    moveStr += char(targetPosition.file + 'a');
-    moveStr += char(targetPosition.rank + '1');
-
-    return moveStr;
-}
-
-pair<int, int> Move::getStartPosition()
-{
-    return startPosition;
-}
-
-pair<int, int> Move::getStep()
-{
-    return step;
-}
-
-Piece Move::getPromotedPiece()
-{
-    return promotedPiece;
-}
-
 Board::Board()
 {
     for (int rank = 0; rank < 8; ++rank)
         for (int file = 0; file < 8; ++file)
-            board[rank][file] = Piece('u', 0);
+            board[rank][file] = Piece('U', 0);
 
     for (int file = 0; file < 8; ++file)
     {
@@ -88,11 +43,18 @@ int Board::getPoint()
 
 void Board::makeMove(Move move)
 {
-    pair<int, int> startPosition = move.getStartPosition();
-    pair<int, int> step = move.getStep();
-    pair<int, int> targetPosition = {startPosition.rank + step.rank, startPosition.file + step.file};
-    swap(board[startPosition.rank][startPosition.file], board[targetPosition.rank][targetPosition.file]);
-    board[targetPosition.rank][targetPosition.file].setInfo('U', 0);
+
+    // Normal move
+
+    // Castling
+
+    // Special move of Pawn
+
+    // First 2-step
+
+    // En passant
+
+    // Promotion
 }
 
 bool Board::isCheck(pair<int, int> position)
@@ -189,14 +151,67 @@ vector<Move> Board::getLegalMoves(char color)
                 for (int i = 0; i < directions.size(); ++i)
                     for (int base = range.first; base <= range.second; ++base)
                     {
-                        Move move = Move({rank, file}, {base * directions[i].rank, base * directions[i].file});
+                        Move move = Move({rank, file}, {base * directions[i].rank, base * directions[i].file}, 'n');
                         if (isLegalMove(move))
                             legalMoves.push_back(move);
                         else
                             break;
                     }
 
-                // Special move
+                char name = board[rank][file].getName();
+
+                // Castling
+                if (name == 'K' && !static_cast<King *>(&board[rank][file])->getIsMoved() && !isCheck({0, 4}))
+                {
+                    int curRank = (color == 'w') ? 0 : 7;
+
+                    // King side
+                    if (board[curRank][7].getName() == 'R' && !static_cast<Rook *>(&board[curRank][7])->getIsMoved() &&
+                        board[curRank][5].getName() == 'U' && board[curRank][6].getName() == 'U' &&
+                        !isCheck({curRank, 5}) && !isCheck({curRank, 6}))
+                        legalMoves.push_back(Move({0, 4}, {0, 0}, 'c'));
+
+                    // Queen side
+                    if (board[curRank][0].getName() == 'R' && !static_cast<Rook *>(&board[curRank][0])->getIsMoved() &&
+                        board[curRank][1].getName() == 'U' && board[curRank][2].getName() == 'U' && board[curRank][3].getName() == 'U' &&
+                        !isCheck({curRank, 2}) && !isCheck({curRank, 3}))
+                        legalMoves.push_back(Move({0, 4}, {0, 0}, 'C'));
+                }
+
+                // Special move of Pawn
+                if (name == 'P')
+                {
+                    // First 2-step move
+                    if ((rank == 1 && board[1][file].getColor() == 'w' && board[3][file].getName() == 'U') ||
+                        rank == 6 && board[6][file].getColor() == 'b' && board[4][file].getName() == 'U')
+                    {
+                        int direction = (board[rank][file].getColor() == 'w') ? 1 : -1;
+                        legalMoves.push_back(Move({rank, file}, {rank + 3 * direction, file}, 'p'));
+                    }
+
+                    // En passant
+                    for (int i = -1; i <= 1; i += 2)
+                        if (file + i >= 0 && file + i < 8 &&
+                            board[rank][file + 1].getName() == 'P' &&
+                            board[rank][file + i].getColor() != color &&
+                            static_cast<Pawn *>(&board[rank][file + i])->getEnPassant())
+                            legalMoves.push_back(Move({rank, file}, {board[rank][file].getValue(), 1}, 'e'));
+
+                    // Promotion
+                    {
+                        int direction = board[rank][file].getValue();
+                        if (board[rank + direction][file].getName() == 'U')
+                        {
+                            pair<int, int> startPosition = {rank, file};
+                            pair<int, int> step = {direction, 0};
+
+                            legalMoves.push_back(Move({startPosition, step, 'k'}));
+                            legalMoves.push_back(Move({startPosition, step, 'b'}));
+                            legalMoves.push_back(Move({startPosition, step, 'r'}));
+                            legalMoves.push_back(Move({startPosition, step, 'q'}));
+                        }
+                    }
+                }
             }
     return legalMoves;
 }

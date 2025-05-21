@@ -63,6 +63,17 @@ Pawn::Pawn(int value) : Piece('P', value)
 {
     directions.push_back({value / abs(value), 0});
     range = {1, 1};
+    enPassant = false;
+}
+
+bool Pawn::getEnPassant()
+{
+    return enPassant;
+}
+
+void Pawn::setEnPassant(bool enPassant)
+{
+    this->enPassant = enPassant;
 }
 
 Knight::Knight(int value) : Piece('N', value)
