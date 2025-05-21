@@ -56,7 +56,7 @@ Board::Board()
         for (int file = 0; file < 8; ++file)
             board[rank][file] = Piece('u', 0);
 
-    for (int file = 0; file < 7; ++file)
+    for (int file = 0; file < 8; ++file)
     {
         board[1][file] = Pawn(1);
         board[6][file] = Pawn(-1);
@@ -106,30 +106,28 @@ bool Board::isCheck(pair<int, int> position)
                 if (name == 'U')
                     continue;
 
-                // Pawn
-                if (name == 'P' && abs(file - position.file) == 1)
+                vector<pair<int, int>> directions = board[rank][file].getDirections();
+                pair<int, int> range = board[rank][file].getRange();
+
+                // Pawn / Knight / King
+                if (name == 'P' || name == 'N' || name == 'K')
                 {
-                    if (board[rank][file].getValue() > 0)
-                    {
-                        if (rank - position.rank == -1)
-                            return true;
-                    }
-                    else if (rank - position.rank == 1)
-                        return true;
+                    for (int i = 0; i < directions.size(); ++i)
+                        for (int base = range.first; base <= range.second; ++base)
+                            if (make_pair(rank + base * directions[i].rank, file + base * directions[i].file) == position)
+                                return true;
                 }
 
-                // Knight
-                if (name == 'N' && abs(rank - position.rank) + abs(file - position.file) == 3 &&
-                    abs(rank - position.rank) * abs(file - position.file) == 2)
-                    return true;
-
-                // Bishop
-                if ((name == 'B' || name == 'Q') &&
-                    (rank + position.rank == file + position.file || rank - position.rank == file - position.file))
+                // Bishop / Rook / Queen
+                else if (rank == position.rank ||
+                         file == position.file ||
+                         rank + file == position.rank + position.file ||
+                         rank - file == position.rank - position.file)
                 {
-                    int rankStep = (rank > position.rank) ? -1 : 1;
-                    int fileStep = (file > position.file) ? -1 : 1;
-                    pair<int, int> buffer = {rank + rankStep, file + fileStep};
+                    pair<int, int> direction;
+                    direction.rank = (file == position.file) ? 0 : -(rank - position.rank) / abs(rank - position.rank);
+                    direction.file = (rank == position.rank) ? 0 : -(file - position.file) / abs(file - position.file);
+                    pair<int, int> buffer = {rank + direction.rank, file + direction.file};
                     bool flag = false;
                     while (buffer != position)
                     {
@@ -138,38 +136,12 @@ bool Board::isCheck(pair<int, int> position)
                             flag = true;
                             break;
                         }
-                        buffer.rank += rankStep;
-                        buffer.file += fileStep;
+                        buffer.rank += direction.rank;
+                        buffer.file += direction.file;
                     }
                     if (!flag)
                         return true;
                 }
-
-                // Rook
-                if ((name == 'R' || name == 'Q') &&
-                    ((rank == position.rank) || file == position.file))
-                {
-                    int rankStep = (rank != position.rank) ? 1 : 0;
-                    int fileStep = (file != position.file) ? 1 : 0;
-                    pair<int, int> buffer = {rank + rankStep, file + fileStep};
-                    bool flag = false;
-                    while (buffer != position)
-                    {
-                        if (board[buffer.rank][buffer.file].getName() != 'U')
-                        {
-                            flag = true;
-                            break;
-                        }
-                        buffer.rank += rankStep;
-                        buffer.file += fileStep;
-                    }
-                    if (!flag)
-                        return true;
-                }
-
-                // King
-                if (name == 'K' && abs(rank - position.rank) == 1 && abs(file - position.file) == 1)
-                    return true;
             }
     return false;
 }
@@ -193,7 +165,6 @@ bool Board::isLegalMove(Move move)
             newBoard.board[rank][file] = board[rank][file];
 
     newBoard.makeMove(move);
-    pair<int, int> startPosition = move.getStartPosition();
     Piece movedPiece = newBoard.board[startPosition.rank][startPosition.file];
     for (int rank = 0; rank < 8; ++rank)
         for (int file = 0; file < 8; ++file)
@@ -202,6 +173,7 @@ bool Board::isLegalMove(Move move)
             if (piece.getName() == 'K' && piece.isSameColor(movedPiece))
                 return !isCheck({rank, file});
         }
+    return true;
 }
 
 vector<Move> Board::getLegalMoves(char color)
@@ -211,51 +183,20 @@ vector<Move> Board::getLegalMoves(char color)
         for (int file = 0; file < 8; ++file)
             if (board[rank][file].getColor() == color)
             {
-                char name = board[rank][file].getName();
-
-                // Pawn
-                if (name == 'P')
-                {
-                }
-
-                // Knight
-                if (name == 'N')
-                {
-                    pair<int, int> step[] = {{2, 1}, {1, 2}, {-1, 2}, {-2, 1}, {-2, -1}, {-1, -2}, {1, -2}, {2, -1}};
-                    for (int i = 0; i < 8; ++i)
+                // Normal move
+                vector<pair<int, int>> directions = board[rank][file].getDirections();
+                pair<int, int> range = board[rank][file].getRange();
+                for (int i = 0; i < directions.size(); ++i)
+                    for (int base = range.first; base <= range.second; ++base)
                     {
-                        Move move = Move({rank, file}, step[i]);
+                        Move move = Move({rank, file}, {base * directions[i].rank, base * directions[i].file});
                         if (isLegalMove(move))
                             legalMoves.push_back(move);
+                        else
+                            break;
                     }
-                }
 
-                // Bishop
-                if (name == 'B' || name == 'Q')
-                {
-                    pair<int, int> directions[] = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-                    for (int i = 0; i < 4; ++i)
-                        for (int base = 1; base < 8; ++base)
-                        {
-                            Move move = Move({rank, file}, {base * directions[i].rank, base * directions[i].file});
-                            if (isLegalMove(move))
-                                legalMoves.push_back(move);
-                            else
-                                break;
-                        }
-                }
-
-                // Rook
-                if (name == 'R' || name == 'Q')
-                {
-                }
-
-                // King
-                if (name == 'K')
-                {
-                }
-
-                // Castling
+                // Special move
             }
     return legalMoves;
 }

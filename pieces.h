@@ -1,6 +1,9 @@
 #ifndef PIECES_H_INCLUDED
 #define PIECES_H_INCLUDED
 
+#include <vector>
+#include <utility>
+
 using namespace std;
 
 class Piece
@@ -8,6 +11,8 @@ class Piece
 protected:
     char name;
     int value;
+    vector<pair<int, int>> directions;
+    pair<int, int> range;
 
 public:
     Piece();
@@ -18,16 +23,14 @@ public:
     char getColor();
     void setInfo(char name, int value);
     bool isSameColor(Piece piece);
+    vector<pair<int, int>> getDirections();
+    pair<int, int> getRange();
 };
 
 class Pawn : public Piece
 {
-private:
-    int moveCount;
-
 public:
     Pawn(int value);
-    void getEnPassant();
 };
 
 class Knight : public Piece
