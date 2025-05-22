@@ -7,11 +7,11 @@
 
 using namespace std;
 
-Move::Move(pair<int, int> startPosition, pair<int, int> step, char moveType)
+Move::Move(pair<int, int> startPosition, pair<int, int> step, char typeOfMove)
 {
     this->startPosition = startPosition;
     this->step = step;
-    this->moveType = moveType;
+    this->typeOfMove = typeOfMove;
 }
 
 Move::Move(string moveStr)
@@ -29,6 +29,7 @@ string Move::getMoveStr()
     moveStr += char(startPosition.rank + '1');
     moveStr += char(targetPosition.file + 'a');
     moveStr += char(targetPosition.rank + '1');
+    moveStr += typeOfMove;
 
     return moveStr;
 }
@@ -41,4 +42,9 @@ pair<int, int> Move::getStartPosition()
 pair<int, int> Move::getStep()
 {
     return step;
+}
+
+char Move::getTypeOfMove()
+{
+    return typeOfMove;
 }

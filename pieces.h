@@ -29,13 +29,8 @@ public:
 
 class Pawn : public Piece
 {
-private:
-    bool enPassant;
-
 public:
     Pawn(int value);
-    bool getEnPassant();
-    void setEnPassant(bool enPassant);
 };
 
 class Knight : public Piece

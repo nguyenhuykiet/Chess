@@ -1,11 +1,11 @@
-#include "pieces.h"
-#include "information.h"
-#include "calculation.h"
+#include "board.h"
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
 int main()
 {
+    
 }

@@ -25,6 +25,11 @@ Board::Board()
     board[0][5] = Bishop(3);            board[7][5] = Bishop(-3);
     board[0][6] = Knight(3);            board[7][6] = Knight(-3);
     board[0][7] = Rook(5);              board[7][7] = Rook(-5);
+
+    whiteKingPosition = {0, 4};
+    blackKingPosition = {7, 4};
+    turn = 'w';
+    enPassantPosition = {8, 8};
 }
 
 Piece Board::getPiece(pair<int, int> position)
@@ -43,18 +48,75 @@ int Board::getPoint()
 
 void Board::makeMove(Move move)
 {
+    pair<int, int> startPosition = move.getStartPosition();
+    pair<int, int> step = move.getStep();
+    pair<int, int> targetPosition = {startPosition.rank + step.rank, startPosition.file + step.file};
+    char typeOfMove = move.getTypeOfMove();
 
     // Normal move
+    if (typeOfMove == 'n')
+    {
+        swap(board[startPosition.rank][startPosition.file], board[targetPosition.rank][targetPosition.file]);
+        board[targetPosition.rank][targetPosition.file].setInfo('U', 0);
+    }
 
-    // Castling
+    // King side castling
+    if (typeOfMove == 'c')
+    {
+        int curRank = startPosition.rank;
+        swap(board[curRank][4], board[curRank][6]);
+        swap(board[curRank][7], board[curRank][5]);
+    }
 
-    // Special move of Pawn
-
-    // First 2-step
+    // Queen side castling
+    if (typeOfMove == 'C')
+    {
+        int curRank = startPosition.rank;
+        swap(board[curRank][4], board[curRank][2]);
+        swap(board[curRank][0], board[curRank][3]);
+    }
 
     // En passant
+    if (typeOfMove == 'e')
+    {
+        swap(board[startPosition.rank][startPosition.file], board[targetPosition.rank][targetPosition.file]);
+        board[enPassantPosition.rank][enPassantPosition.file].setInfo('U', 0);
+    }
 
     // Promotion
+    if (typeOfMove == 'N' || typeOfMove == 'B' || typeOfMove == 'R' || typeOfMove == 'Q')
+    {
+        board[startPosition.rank][startPosition.file].setInfo('U', 0);
+        int sign = board[startPosition.rank][startPosition.file].getValue();
+        switch (typeOfMove)
+        {
+        case 'N':
+            board[startPosition.rank][startPosition.file] = Knight(3 * sign);
+            break;
+
+        case 'B':
+            board[startPosition.rank][startPosition.file] = Bishop(3 * sign);
+            break;
+
+        case 'R':
+            board[startPosition.rank][startPosition.file] = Rook(5 * sign);
+            break;
+
+        case 'Q':
+            board[startPosition.rank][startPosition.file] = Queen(9 * sign);
+            break;
+        }
+    }
+
+    // Cancel en passant
+    enPassantPosition = {8, 8};
+
+    // First 2-step
+    if (typeOfMove == 'p')
+    {
+        swap(board[startPosition.rank][startPosition.file], board[targetPosition.rank][targetPosition.file]);
+        enPassantPosition = startPosition;
+    }
 }
 
 bool Board::isCheck(pair<int, int> position)
@@ -138,12 +200,12 @@ bool Board::isLegalMove(Move move)
     return true;
 }
 
-vector<Move> Board::getLegalMoves(char color)
+vector<Move> Board::getLegalMoves()
 {
-    vector<Move> legalMoves;
+    legalMoves.clear();
     for (int rank = 0; rank < 8; ++rank)
         for (int file = 0; file < 8; ++file)
-            if (board[rank][file].getColor() == color)
+            if (board[rank][file].getColor() == turn)
             {
                 // Normal move
                 vector<pair<int, int>> directions = board[rank][file].getDirections();
@@ -163,55 +225,62 @@ vector<Move> Board::getLegalMoves(char color)
                 // Castling
                 if (name == 'K' && !static_cast<King *>(&board[rank][file])->getIsMoved() && !isCheck({0, 4}))
                 {
-                    int curRank = (color == 'w') ? 0 : 7;
-
                     // King side
-                    if (board[curRank][7].getName() == 'R' && !static_cast<Rook *>(&board[curRank][7])->getIsMoved() &&
-                        board[curRank][5].getName() == 'U' && board[curRank][6].getName() == 'U' &&
-                        !isCheck({curRank, 5}) && !isCheck({curRank, 6}))
-                        legalMoves.push_back(Move({0, 4}, {0, 0}, 'c'));
+                    if (board[rank][7].getName() == 'R' && !static_cast<Rook *>(&board[rank][7])->getIsMoved() &&
+                        board[rank][5].getName() == 'U' && board[rank][6].getName() == 'U' &&
+                        !isCheck({rank, 5}) && !isCheck({rank, 6}))
+                        legalMoves.push_back(Move({rank, 4}, {0, 2}, 'c'));
 
                     // Queen side
-                    if (board[curRank][0].getName() == 'R' && !static_cast<Rook *>(&board[curRank][0])->getIsMoved() &&
-                        board[curRank][1].getName() == 'U' && board[curRank][2].getName() == 'U' && board[curRank][3].getName() == 'U' &&
-                        !isCheck({curRank, 2}) && !isCheck({curRank, 3}))
-                        legalMoves.push_back(Move({0, 4}, {0, 0}, 'C'));
+                    if (board[rank][0].getName() == 'R' && !static_cast<Rook *>(&board[rank][0])->getIsMoved() &&
+                        board[rank][1].getName() == 'U' && board[rank][2].getName() == 'U' && board[rank][3].getName() == 'U' &&
+                        !isCheck({rank, 2}) && !isCheck({rank, 3}))
+                        legalMoves.push_back(Move({rank, 4}, {0, 2}, 'C'));
                 }
 
                 // Special move of Pawn
                 if (name == 'P')
                 {
+                    int direction = (turn == 'w') ? 1 : -1;
+
                     // First 2-step move
-                    if ((rank == 1 && board[1][file].getColor() == 'w' && board[3][file].getName() == 'U') ||
-                        rank == 6 && board[6][file].getColor() == 'b' && board[4][file].getName() == 'U')
-                    {
-                        int direction = (board[rank][file].getColor() == 'w') ? 1 : -1;
-                        legalMoves.push_back(Move({rank, file}, {rank + 3 * direction, file}, 'p'));
-                    }
+                    if ((rank == 1 || rank == 6) && board[rank + 2 * direction][file].getName() == 'U')
+                        legalMoves.push_back(Move({rank, file}, {2 * direction, 0}, 'p'));
 
                     // En passant
                     for (int i = -1; i <= 1; i += 2)
                         if (file + i >= 0 && file + i < 8 &&
                             board[rank][file + 1].getName() == 'P' &&
-                            board[rank][file + i].getColor() != color &&
-                            static_cast<Pawn *>(&board[rank][file + i])->getEnPassant())
-                            legalMoves.push_back(Move({rank, file}, {board[rank][file].getValue(), 1}, 'e'));
+                            board[rank][file + i].getColor() != turn &&
+                            make_pair(rank, file + i) == enPassantPosition)
+                            legalMoves.push_back(Move({rank, file}, {direction, 1}, 'e'));
 
                     // Promotion
+                    if (rank == 6 && board[rank + direction][file].getName() == 'U')
                     {
-                        int direction = board[rank][file].getValue();
-                        if (board[rank + direction][file].getName() == 'U')
-                        {
-                            pair<int, int> startPosition = {rank, file};
-                            pair<int, int> step = {direction, 0};
+                        pair<int, int> startPosition = {rank, file};
+                        pair<int, int> step = {direction, 0};
 
-                            legalMoves.push_back(Move({startPosition, step, 'k'}));
-                            legalMoves.push_back(Move({startPosition, step, 'b'}));
-                            legalMoves.push_back(Move({startPosition, step, 'r'}));
-                            legalMoves.push_back(Move({startPosition, step, 'q'}));
-                        }
+                        legalMoves.push_back(Move({startPosition, step, 'N'}));
+                        legalMoves.push_back(Move({startPosition, step, 'B'}));
+                        legalMoves.push_back(Move({startPosition, step, 'R'}));
+                        legalMoves.push_back(Move({startPosition, step, 'Q'}));
                     }
                 }
             }
     return legalMoves;
+}
+
+bool Board::endGame()
+{
+    if (!legalMoves.empty())
+        return false;
+
+    if (turn == 'w' && isCheck(whiteKingPosition))
+        return true;
+
+    if (turn == 'b' && isCheck(blackKingPosition))
+        return true;
+
+    return false;
 }

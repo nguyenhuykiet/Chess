@@ -20,9 +20,9 @@ private:
      * 'C': Queen side castling
      * 'p': first 2-step move of Pawn
      * 'e': en passant
-     * 'k'/'b'/'r'/'q': promote to Knight/Bishop/Rook/Queen
+     * 'K'/'B'/'R'/'Q': promote to Knight/Bishop/Rook/Queen
      */
-    char moveType;
+    char typeOfMove;
 
 public:
     Move(pair<int, int> startPosition, pair<int, int> step, char moveType);
@@ -30,6 +30,7 @@ public:
     string getMoveStr();
     pair<int, int> getStartPosition();
     pair<int, int> getStep();
+    char getTypeOfMove();
 };
 
 #endif

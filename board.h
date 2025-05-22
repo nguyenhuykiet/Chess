@@ -12,6 +12,11 @@ class Board
 {
 private:
     Piece board[8][8];
+    char turn;
+    pair<int, int> whiteKingPosition;
+    pair<int, int> blackKingPosition;
+    pair<int, int> enPassantPosition;
+    vector<Move> legalMoves;
 
 public:
     Board();
@@ -20,7 +25,8 @@ public:
     void makeMove(Move move);
     bool isCheck(pair<int, int> position);
     bool isLegalMove(Move move);
-    vector<Move> getLegalMoves(char color);
+    vector<Move> getLegalMoves();
+    bool endGame();
 };
 
 #endif
